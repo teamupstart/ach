@@ -44,7 +44,7 @@ module ACH
         if batch.addendas.empty?
           @control.entry_count += batch.entries.inject(0) { |total, entry| total + entry.records_count }
         else
-          @control.entry_count += batch.entries.length + batch.addendas.length
+          @control.entry_count += (batch.entries.length + batch.addendas.length)
         end
         @control.debit_total += batch.control.debit_total
         @control.credit_total += batch.control.credit_total

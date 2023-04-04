@@ -13,7 +13,11 @@ module ACH
     end
 
     def to_ach
-      @control.entry_count = @entries.inject(0) { |total, entry| total + entry.records_count }
+      if @addendas.empty?
+        @control.entry_count = @entries.inject(0) { |total, entry| total + entry.records_count }
+      else
+        @control.entry_count = (@entries.length + @addendas.length)
+      end
       @control.debit_total = 0
       @control.credit_total = 0
       @control.entry_hash = 0
