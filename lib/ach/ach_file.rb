@@ -28,10 +28,6 @@ module ACH
       @batches.each { |b| records += b.to_ach }
       records << @control
 
-      nines_needed = 10 - (records.length % 10)
-      nines_needed = nines_needed % 10
-      nines_needed.times { records << Records::Nines.new() }
-
       @control.batch_count = @batches.length
       @control.block_count = (records.length / 10).ceil
 
@@ -41,17 +37,34 @@ module ACH
       @control.entry_hash = 0
 
       @batches.each do | batch |
-        if batch.addendas.empty?
-          @control.entry_count += batch.entries.inject(0) { |total, entry| total + entry.records_count }
-        else
-          @control.entry_count += (batch.entries.length + batch.addendas.length)
-        end
+        @control.entry_count += batch.entries.inject(0) { |total, entry| total + entry.records_count }
         @control.debit_total += batch.control.debit_total
         @control.credit_total += batch.control.credit_total
         @control.entry_hash += batch.control.entry_hash
       end
 
-      records.collect { |r| r.to_ach }.join("\r\n") + "\r\n"
+      # the nested addenda are getting returned pre-concatenated and aren't getting counted in the nines_needed
+      # data looks like this:
+      #
+      # [header,
+      # entry\r\naddenda
+      # control]
+      #
+      # when we need it to be:
+      #
+      # [header,
+      # entry,
+      # addenda,
+      # control]
+      #
+      # so we'll piece them all together then split them back out into an array and THEN count
+      records_array = records.collect { |r| r.to_ach }.join("\r\n").split("\r\n")
+
+      nines_needed = 10 - (records_array.length % 10)
+      nines_needed = nines_needed % 10
+      nines_needed.times { records_array << Records::Nines.new().to_ach }
+
+      records_array.join("\r\n") + "\r\n"
     end
 
     def report
