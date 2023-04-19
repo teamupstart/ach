@@ -29,7 +29,6 @@ module ACH
       records << @control
 
       @control.batch_count = @batches.length
-      @control.block_count = (records.length / 10).ceil
 
       @control.entry_count = 0
       @control.debit_total = 0
@@ -58,13 +57,16 @@ module ACH
       # control]
       #
       # so we'll piece them all together then split them back out into an array and THEN count
+      @control.block_count = 0 # temporary number until we have the total lines to update it
       records_array = records.collect { |r| r.to_ach }.join("\r\n").split("\r\n")
 
       nines_needed = 10 - (records_array.length % 10)
       nines_needed = nines_needed % 10
-      nines_needed.times { records_array << Records::Nines.new().to_ach }
+      nines_needed.times { records << Records::Nines.new() }
 
-      records_array.join("\r\n") + "\r\n"
+      @control.block_count = (records_array.length / 10.0).ceil
+
+      records.collect { |r| r.to_ach }.join("\r\n") + "\r\n"
     end
 
     def report
