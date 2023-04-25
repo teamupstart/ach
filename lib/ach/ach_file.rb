@@ -28,12 +28,7 @@ module ACH
       @batches.each { |b| records += b.to_ach }
       records << @control
 
-      nines_needed = 10 - (records.length % 10)
-      nines_needed = nines_needed % 10
-      nines_needed.times { records << Records::Nines.new() }
-
       @control.batch_count = @batches.length
-      @control.block_count = (records.length / 10).ceil
 
       @control.entry_count = 0
       @control.debit_total = 0
@@ -46,6 +41,30 @@ module ACH
         @control.credit_total += batch.control.credit_total
         @control.entry_hash += batch.control.entry_hash
       end
+
+      # the nested addenda are getting returned pre-concatenated and aren't getting counted in the nines_needed
+      # data looks like this:
+      #
+      # [header,
+      # entry\r\naddenda
+      # control]
+      #
+      # when we need it to be:
+      #
+      # [header,
+      # entry,
+      # addenda,
+      # control]
+      #
+      # so we'll piece them all together then split them back out into an array and THEN count
+      @control.block_count = 0 # temporary number until we have the total lines to update it
+      records_array = records.collect { |r| r.to_ach }.join("\r\n").split("\r\n")
+
+      nines_needed = 10 - (records_array.length % 10)
+      nines_needed = nines_needed % 10
+      nines_needed.times { records << Records::Nines.new() }
+
+      @control.block_count = (records_array.length / 10.0).ceil
 
       records.collect { |r| r.to_ach }.join("\r\n") + "\r\n"
     end
