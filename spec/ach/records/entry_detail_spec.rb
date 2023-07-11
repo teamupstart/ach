@@ -29,6 +29,23 @@ module ACH
         it_behaves_like 'an amount (Integer)'
       end
 
+      describe '#individual_name' do
+        it 'should truncate fields that exceed the length in left_justify' do
+          entry_detail.individual_name = "Employee Name That Is Much Too Long"
+          expect(entry_detail.individual_name_to_ach).to eq("Employee Name That Is ")
+        end
+
+        it 'should remove new line characters' do
+          entry_detail.individual_name = "Multiline\nName\r\n"
+          expect(entry_detail.individual_name_to_ach).to eq("MultilineName         ")
+        end
+
+        it 'should strip non ascii characters' do
+          entry_detail.individual_name = "Jacob Møller"
+          expect(entry_detail.individual_name_to_ach).to eq("Jacob Mller           ")
+        end
+      end
+
       describe '#to_ach' do
         before(:each) do
           entry_detail.transaction_code = ACH::CHECKING_CREDIT
