@@ -22,13 +22,26 @@ module ACH
       end
     end
 
-    def to_s
+
+    # @param eol [String] Line ending, default to CRLF
+    def to_s eol = ACH.eol
       records = []
       records << @header
-      @batches.each { |b| records += b.to_ach }
+
+      @batches.each_with_index do |batch, index|
+        batch.header.batch_number ||= index + 1
+        records += batch.to_ach
+      end
       records << @control
 
+      records_count = records.map(&:records_count).reduce(:+)
+      nines_needed = (10 - records_count) % 10
+      nines_needed = nines_needed % 10
+      nines_needed.times { records << Records::Nines.new() }
+
+      records_count = records.map(&:records_count).reduce(:+)
       @control.batch_count = @batches.length
+      @control.block_count = (records_count / 10).ceil
 
       @control.entry_count = 0
       @control.debit_total = 0
@@ -42,34 +55,10 @@ module ACH
         @control.entry_hash += batch.control.entry_hash
       end
 
-      # the nested addenda are getting returned pre-concatenated and aren't getting counted in the nines_needed
-      # data looks like this:
-      #
-      # [header,
-      # entry\r\naddenda
-      # control]
-      #
-      # when we need it to be:
-      #
-      # [header,
-      # entry,
-      # addenda,
-      # control]
-      #
-      # so we'll piece them all together then split them back out into an array and THEN count
-      @control.block_count = 0 # temporary number until we have the total lines to update it
-      records_array = records.collect { |r| r.to_ach }.join("\r\n").split("\r\n")
-
-      nines_needed = 10 - (records_array.length % 10)
-      nines_needed = nines_needed % 10
-      nines_needed.times { records << Records::Nines.new() }
-
-      @control.block_count = (records_array.length / 10.0).ceil
-
-      records.collect { |r| r.to_ach }.join("\r\n") + "\r\n"
+      records.collect { |r| r.to_ach(eol: eol) }.join(eol) + eol
     end
 
-    def report
+    def report eol: ACH.eol
       to_s # To ensure correct records
       lines = []
 
@@ -85,7 +74,7 @@ module ACH
       lines << left_justify("Credit Total: ", 25) +
           sprintf("% 7d.%02d", @control.credit_total / 100, @control.credit_total % 100)
 
-      lines.join("\r\n")
+      lines.join(eol)
     end
 
     def parse_fixed data
@@ -95,7 +84,6 @@ module ACH
     end
 
     def parse data
-      trace_number = 0
       fh =  self.header
       batch = nil
       bh = nil
@@ -117,10 +105,16 @@ module ACH
           batch = ACH::Batch.new
           bh = batch.header
           bh.company_name                   = line[4..19].strip
+          bh.company_discretionary_data     = line[20..39].strip
           bh.company_identification         = line[40..49].gsub(/\A1/, '')
+
+          # Does not try to guess if company identification is an EIN
+          # TODO fix differently when I feel like breaking backwards
+          # compatibility.
+          bh.full_company_identification    = line[40..49]
           bh.standard_entry_class_code      = line[50..52].strip
           bh.company_entry_description      = line[53..62].strip
-          bh.company_descriptive_date       = Date.parse(line[63..68]) rescue nil # this can be various formats
+          bh.company_descriptive_date       = parse_descriptive_date(line[63..68].strip)
           bh.effective_entry_date           = Date.parse(line[69..74])
           bh.originating_dfi_identification = line[79..86].strip
         when '6'
@@ -152,15 +146,29 @@ module ACH
         when '8'
           # skip
         when '9'
-          # skip
+          @control = Records::FileControl.new
+          @control.filler = line[55..93]
         else
-          raise "Didn't recognize type code #{type} for this line:\n#{line}"
+          raise UnrecognizedTypeCode, "Didn't recognize type code #{type} for this line:\n#{line}"
         end
       end
 
       self.batches << batch unless batch.nil?
-      batch.entries.each{ |entry| entry.trace_number = (trace_number += 1) }
       to_s
+    end
+
+    def parse_descriptive_date(date_string)
+      return if date_string.empty?
+
+      date_time = date_string.match(/^SD(\d{2})(\d{2})$/) do
+        same_day_hour, same_day_minute = _1.captures.map(&:to_f)
+
+        Date.today.to_datetime + (same_day_hour + same_day_minute/60) / 24
+      end
+
+      date_time || ACH::Data.parse(date_string)
+    rescue
+      date_string
     end
   end
 end

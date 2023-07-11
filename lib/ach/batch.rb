@@ -4,6 +4,7 @@ module ACH
     attr_reader :addendas
     attr_reader :header
     attr_reader :control
+    attr_accessor :full_company_identification
 
     def initialize
       @entries = []
@@ -13,7 +14,7 @@ module ACH
     end
 
     def to_ach
-      @control.entry_count = @entries.inject(0) { |total, entry| total + entry.records_count }
+      @control.entry_count = @entries.map(&:records_count).reduce(:+).to_i
       @control.debit_total = 0
       @control.credit_total = 0
       @control.entry_hash = 0
@@ -50,6 +51,10 @@ module ACH
       @control.company_identification = @header.company_identification
       @control.originating_dfi_identification = @header.originating_dfi_identification
       @control.batch_number = @header.batch_number
+      if last_entry.is_a? ACH::BalancingEntryDetail
+        @control.credit_total = last_entry.amount
+        @control.debit_total = last_entry.amount
+      end
 
       entries_or_addendas = []
       @entries.each do |entry|
@@ -59,6 +64,12 @@ module ACH
       end
 
       [@header] + entries_or_addendas + [@control]
+    end
+
+    private
+
+    def last_entry
+      @last_entry ||= @entries.last
     end
   end
 end
