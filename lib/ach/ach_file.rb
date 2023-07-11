@@ -119,7 +119,7 @@ module ACH
           bh.originating_dfi_identification = line[79..86].strip
         when '6'
           # this is wrong - it's not always ctxentrydetail
-          ed = ACH::CtxEntryDetail.new
+          ed = batch.header.standard_entry_class_code == "CTX" ? ACH::CtxEntryDetail.new : ACH::EntryDetail.new
           ed.transaction_code               = line[1..2]
           ed.routing_number                 = line[3..11]
           ed.account_number                 = line[12..28].strip

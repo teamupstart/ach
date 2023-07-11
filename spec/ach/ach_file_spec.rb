@@ -424,7 +424,7 @@ describe ACH::ACHFile do
     end
 
     it 'uses the EntryDetail class on non-CTX entries' do
-      expect(subject.batches.first.entries.first.class).not_to be(ACH::Records::CtxEntryDetail)
+      expect(subject.batches.first.entries.first.class).not_to eq(ACH::Records::CtxEntryDetail)
     end
 
     context 'when the file contains CTX entries' do
@@ -444,7 +444,7 @@ describe ACH::ACHFile do
       end
 
       it 'parses using the CTXEntry object' do
-        expect(subject.batches.first.entries.first.class).to be(ACH::Records::CtxEntryDetail)
+        expect(subject.batches.first.entries.first.class).to eq(ACH::Records::CtxEntryDetail)
       end
     end
   end

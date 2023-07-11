@@ -24,7 +24,7 @@ module ACH::Records
     # entries. Instead, it is suggested by the ACH spec that the ODFI be used
     # as the first 8 digits of the 15-digit trace number. I (Jared Morgan)
     # initially decided to treat the two elements of the trace number as
-    # diffent fields, but that has caused confusion. I now intend to make this
+    # different fields, but that has caused confusion. I now intend to make this
     # an optional field which can used in generating the trace number, although
     # I haven't actually worked out how that will function.
     field :originating_dfi_identification, String,
