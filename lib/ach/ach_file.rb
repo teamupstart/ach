@@ -120,13 +120,13 @@ module ACH
           bh.originating_dfi_identification = line[79..86].strip
         when '6'
           # this is wrong - it's not always ctxentrydetail
-          ed = batch.header.standard_entry_class_code == "CTX" ? ACH::CtxEntryDetail.new : ACH::EntryDetail.new
+          ed = is_ctx_code(batch) ? ACH::CtxEntryDetail.new : ACH::EntryDetail.new
           ed.transaction_code               = line[1..2]
           ed.routing_number                 = line[3..11]
           ed.account_number                 = line[12..28].strip
           ed.amount                         = line[29..38].to_i # cents
           ed.individual_id_number           = line[39..53].strip
-          ed.individual_name                = line[54..75].strip
+          ed.individual_name                = is_ctx_code(batch) ? line[58..75].strip : line[54..75].strip
           ed.originating_dfi_identification = line[79..86]
           ed.trace_number                   = line[87..93].to_i
           batch.entries << ed
@@ -149,14 +149,13 @@ module ACH
           # skip
         when '9'
           @control = Records::FileControl.new
-          @control.filler = line[55..93]
-          # Sergiu look here
-          # @control.batch_count = line[1..6]
-          # @control.block_count = line[7..12]
-          # @control.entry_count = line[13..20]
-          # @control.entry_hash = line[21..30]
-          # @control.debit_total = line[31..42]
-          # @control.credit_total = line[43..54]
+          @control.batch_count    = line[1..6].to_i
+          @control.block_count    = line[7..12].to_i
+          @control.entry_count    = line[13..20].to_i
+          @control.entry_hash     = line[21..30]
+          @control.debit_total    = line[31..42]
+          @control.credit_total   = line[43..54]
+          @control.filler         = line[55..93]
         else
           raise UnrecognizedTypeCode, "Didn't recognize type code #{type} for this line:\n#{line}"
         end
@@ -164,6 +163,10 @@ module ACH
 
       self.batches << batch unless batch.nil?
       to_s
+    end
+
+    def is_ctx_code(batch)
+      batch.header.standard_entry_class_code == "CTX"
     end
 
     def parse_descriptive_date(date_string)
