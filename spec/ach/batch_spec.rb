@@ -29,14 +29,28 @@ describe ACH::Batch do
   end
 
   let(:debit_entry_1) do
-    entry = credit_entry_1.dup
+    entry = ACH::EntryDetail.new
+
     entry.transaction_code = ACH::CHECKING_DEBIT
+    entry.routing_number = "000000000"
+    entry.account_number = "00000000000"
+    entry.amount = 10000 # In cents
+    entry.individual_id_number = "Employee Name1"
+    entry.individual_name = "Employee Name1"
+    entry.originating_dfi_identification = '00000000'
     entry
   end
 
   let(:debit_entry_2) do
-    entry = credit_entry_2.dup
+    entry = ACH::EntryDetail.new
+
     entry.transaction_code = ACH::CHECKING_DEBIT
+    entry.routing_number = "000000000"
+    entry.account_number = "00000000000"
+    entry.amount = 200000 # In cents
+    entry.individual_id_number = "Employee Name2"
+    entry.individual_name = "Employee Name2"
+    entry.originating_dfi_identification = '00000000'
     entry
   end
 
@@ -143,23 +157,6 @@ describe ACH::Batch do
         addendum = ACH::Records::Addendum.new
         addendum.entry_detail_sequence_number = credit_entry_2.trace_number
         addendum
-      end
-
-      context 'when addendum are nested in the batch' do
-        let(:batch) do
-          batch = new_batch
-          batch.entries << credit_entry_1 << credit_entry_2
-          batch.entries << debit_entry_1 << debit_entry_2
-          batch.addendas << addendum_entry_1 << addendum_entry_2
-          batch
-        end
-
-        it 'calculates the batch control correctly' do
-          batch.to_ach
-          expect(batch.control.entry_count).to eq(6)
-          expect(batch.control.credit_total).to eq(credit_entry_1.amount + credit_entry_2.amount)
-          expect(batch.control.debit_total).to eq(debit_entry_1.amount + debit_entry_2.amount)
-        end
       end
 
       context 'when addendum are nested in the entry' do

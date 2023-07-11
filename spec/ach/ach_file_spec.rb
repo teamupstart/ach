@@ -161,10 +161,10 @@ describe ACH::ACHFile do
             '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           1000000000000001',
             '705ADDENDUM 1                                                                      00010000001',
             '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           1000000000000001',
+            '705ADDENDUM 1                                                                      00010000001',
             '705ADDENDUM 2                                                                      00010000001',
-            '822000000400222222220000000000000000000002021123456789                         777777770000002',
-            '9000002000002000000090077777777000000000404000000000606                                       ',
-            '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
+            '822000000500222222220000000000000000000002021123456789                         777777770000002',
+            '9000002000002000000100077777777000000000404000000000606                                       ',
             '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
             '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
             '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
@@ -189,60 +189,7 @@ describe ACH::ACHFile do
         addendum_2.payment_data = 'Addendum 2'
 
         entry_1.addenda << addendum_1
-        entry_2.addenda << addendum_2
-        ach_file.to_s
-      end
-
-      it 'correctly creates the file' do
-        lines = ach_file.to_s.split(ACH.eol)
-
-        expect(lines).to eq(valid_file)
-      end
-    end
-
-    context 'with addendum nested in the batch' do
-      let(:valid_file) do
-        [
-            '101 999999999 6666666662011031627A094101BANK NAME              BANK NAME                      ',
-            '5200COMPANY NAME                        1123456789PPDDESCRIPTIO201103201104   1777777770000001',
-            '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           0000000000000001',
-            '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           0000000000000001',
-            '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           0000000000000001',
-            '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           0000000000000001',
-            '62711111111122222222222      0000000404               OFFSET                  0333333330000001',
-            '820000000500555555550000000004040000000004041123456789                         777777770000001',
-            '5220COMPANY NAME                        1123456789PPDDESCRIPTIO201103201104   1777777770000002',
-            '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           1000000000000001',
-            '705ADDENDUM 1                                                                      00010000001',
-            '62211111111122222222222      0000000101EMPLOYEE NAME  EMPLOYEE NAME           1000000000000001',
-            '705ADDENDUM 2                                                                      00010000001',
-            '822000000400222222220000000000000000000002021123456789                         777777770000002',
-            '9000002000002000000090077777777000000000404000000000606                                       ',
-            '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
-            '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
-            '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
-            '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
-            '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999'
-        ]
-      end
-
-      before(:each) do
-        add_batch(ach_file, 4, true)
-        add_batch(ach_file, 2, false)
-        batch = ach_file.batches.last
-        entry_1 = batch.entries.first
-        entry_2 = batch.entries.last
-
-        addendum_1 = ACH::Records::Addendum.new
-        addendum_1.entry_detail_sequence_number = entry_1.trace_number
-        addendum_1.sequence_number = 1
-        addendum_1.payment_data = 'Addendum 1'
-        addendum_2 = ACH::Records::Addendum.new
-        addendum_2.entry_detail_sequence_number = entry_2.trace_number
-        addendum_2.sequence_number = 1
-        addendum_2.payment_data = 'Addendum 2'
-
-        batch.addendas << addendum_1 << addendum_2
+        entry_2.addenda << addendum_1 << addendum_2
         ach_file.to_s
       end
 
@@ -412,14 +359,13 @@ describe ACH::ACHFile do
           '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
           '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
           '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
-          '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999'
+          '9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999',
+          '' # for the trailing carriage return
       ].join(ACH.eol)
     end
 
     it 'parses the file correctly' do
       ach_file = subject
-      n = ach_file.to_s.split(ACH.eol)
-      m = valid_file.split(ACH.eol)
       expect(ach_file.to_s).to eq(valid_file)
     end
 
@@ -445,6 +391,7 @@ describe ACH::ACHFile do
 
       it 'parses using the CTXEntry object' do
         expect(subject.batches.first.entries.first.class).to eq(ACH::Records::CtxEntryDetail)
+        expect(ach_file.to_s).to eq(valid_file)
       end
     end
   end

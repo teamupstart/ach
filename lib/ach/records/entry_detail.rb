@@ -54,17 +54,14 @@ module ACH::Records
       return !self.addenda.empty?
     end
 
-    def to_ach eol: ACH.eol
+    def to_ach
       self.addenda_record_indicator = (self.addenda.empty? ? 0 : 1) if self.respond_to?(:addenda_record_indicator)
       self.number_of_addenda_records = self.addenda.length if self.respond_to?(:number_of_addenda_records)
 
-      ach_string = super
-
       self.addenda.each {|a|
         a.entry_detail_sequence_number = self.trace_number
-        ach_string << eol + a.to_ach
       }
-      return ach_string
+      super
     end
 
     # @return [Integer] Length of addenda plus 1, used by Batch#entry_count

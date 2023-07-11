@@ -34,12 +34,12 @@ module ACH
       end
       records << @control
 
-      records_count = records.map(&:records_count).reduce(:+)
+      records_count = records.length
       nines_needed = (10 - records_count) % 10
       nines_needed = nines_needed % 10
       nines_needed.times { records << Records::Nines.new() }
 
-      records_count = records.map(&:records_count).reduce(:+)
+      records_count = records.length
       @control.batch_count = @batches.length
       @control.block_count = (records_count / 10).ceil
 
@@ -55,7 +55,7 @@ module ACH
         @control.entry_hash += batch.control.entry_hash
       end
 
-      records.collect { |r| r.to_ach(eol: eol) }.join(eol) + eol
+      records.collect { |r| r.to_ach }.join(eol) + eol
     end
 
     def report eol: ACH.eol
@@ -90,6 +90,7 @@ module ACH
       ed = nil
 
       data.strip.split(/\n|\r\n/).each do |line|
+        next if line == Records::Nines.new().to_ach
         type = line[0].chr
         case type
         when '1'
@@ -149,6 +150,13 @@ module ACH
         when '9'
           @control = Records::FileControl.new
           @control.filler = line[55..93]
+          # Sergiu look here
+          # @control.batch_count = line[1..6]
+          # @control.block_count = line[7..12]
+          # @control.entry_count = line[13..20]
+          # @control.entry_hash = line[21..30]
+          # @control.debit_total = line[31..42]
+          # @control.credit_total = line[43..54]
         else
           raise UnrecognizedTypeCode, "Didn't recognize type code #{type} for this line:\n#{line}"
         end

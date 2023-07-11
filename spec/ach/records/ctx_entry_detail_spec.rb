@@ -34,9 +34,11 @@ describe ACH::Records::CtxEntryDetail do
       @entry.addenda << addendum_2
       expect(@entry.addenda.size).to eq(2)
 
+      @entry.to_ach
+
       # 705 is the beginning of an addendum record
-      ach_string = @entry.to_ach
-      expect(ach_string.scan("705").count).to eq(2)
+      expect(@entry.addenda[0].to_ach[0..2]).to eq('705')
+      expect(@entry.addenda[1].to_ach[0..2]).to eq('705')
     end
 
     it 'should print fields different from a CCD/PPD record' do
@@ -62,7 +64,8 @@ describe ACH::Records::CtxEntryDetail do
       # Test number of addenda records
       expect(ach_string.slice(54, 4)).to eq("0001")
       # Test for trace number in each addendum record
-      expect(ach_string.scan(expected_trace_number).count).to eq(2)
+      expect(@entry.addenda[0].to_ach.scan(expected_trace_number).count).to eq(1)
+      expect(ach_string.scan(expected_trace_number).count).to eq(1)
     end
   end
 

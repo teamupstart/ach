@@ -8,7 +8,6 @@ module ACH
 
     def initialize
       @entries = []
-      @addendas = []
       @header = Records::BatchHeader.new
       @control = Records::BatchControl.new
     end
@@ -56,14 +55,13 @@ module ACH
         @control.debit_total = last_entry.amount
       end
 
-      entries_or_addendas = []
+      entries_and_addendum = []
       @entries.each do |entry|
-        entries_or_addendas << entry
-        addenda = @addendas.find { |a| a.entry_detail_sequence_number == entry.trace_number }
-        entries_or_addendas << addenda if addenda
+        entries_and_addendum << entry
+        entries_and_addendum += entry.addenda if entry.addenda_records?
       end
 
-      [@header] + entries_or_addendas + [@control]
+      [@header] + entries_and_addendum + [@control]
     end
 
     private
