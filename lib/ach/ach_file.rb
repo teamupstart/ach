@@ -165,10 +165,6 @@ module ACH
       to_s
     end
 
-    def is_ctx_code(batch)
-      batch.header.standard_entry_class_code == "CTX"
-    end
-
     def parse_descriptive_date(date_string)
       return if date_string.empty?
 
@@ -181,6 +177,11 @@ module ACH
       date_time || ACH::Data.parse(date_string)
     rescue
       date_string
+    end
+
+    private
+    def is_ctx_code(batch)
+      batch.header.standard_entry_class_code == "CTX"
     end
   end
 end
