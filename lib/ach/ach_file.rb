@@ -119,7 +119,6 @@ module ACH
           bh.effective_entry_date           = Date.parse(line[69..74])
           bh.originating_dfi_identification = line[79..86].strip
         when '6'
-          # this is wrong - it's not always ctxentrydetail
           ed = is_ctx_code(batch) ? ACH::CtxEntryDetail.new : ACH::EntryDetail.new
           ed.transaction_code               = line[1..2]
           ed.routing_number                 = line[3..11]
