@@ -34,7 +34,6 @@ require 'ach/errors'
 require 'ach/field_identifiers'
 require 'ach/ach_file'
 require 'ach/batch'
-require 'ach/next_federal_reserve_effective_date'
 require 'ach/version'
 require 'ach/string_formatting_helper'
 
