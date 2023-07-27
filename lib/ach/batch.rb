@@ -4,16 +4,16 @@ module ACH
     attr_reader :addendas
     attr_reader :header
     attr_reader :control
+    attr_accessor :full_company_identification
 
     def initialize
       @entries = []
-      @addendas = []
       @header = Records::BatchHeader.new
       @control = Records::BatchControl.new
     end
 
     def to_ach
-      @control.entry_count = @entries.inject(0) { |total, entry| total + entry.records_count }
+      @control.entry_count = @entries.map(&:records_count).reduce(:+).to_i
       @control.debit_total = 0
       @control.credit_total = 0
       @control.entry_hash = 0
@@ -50,15 +50,24 @@ module ACH
       @control.company_identification = @header.company_identification
       @control.originating_dfi_identification = @header.originating_dfi_identification
       @control.batch_number = @header.batch_number
-
-      entries_or_addendas = []
-      @entries.each do |entry|
-        entries_or_addendas << entry
-        addenda = @addendas.find { |a| a.entry_detail_sequence_number == entry.trace_number }
-        entries_or_addendas << addenda if addenda
+      if last_entry.is_a? ACH::BalancingEntryDetail
+        @control.credit_total = last_entry.amount
+        @control.debit_total = last_entry.amount
       end
 
-      [@header] + entries_or_addendas + [@control]
+      entries_and_addendum = []
+      @entries.each do |entry|
+        entries_and_addendum << entry
+        entries_and_addendum += entry.addenda if entry.addenda_records?
+      end
+
+      [@header] + entries_and_addendum + [@control]
+    end
+
+    private
+
+    def last_entry
+      @last_entry ||= @entries.last
     end
   end
 end

@@ -1,3 +1,3 @@
 module ACH
-  VERSION = '0.4.8'.freeze
+  VERSION = '0.6.3'.freeze
 end

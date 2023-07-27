@@ -17,6 +17,10 @@ Gem::Specification.new do |s|
   s.test_files   = Dir.glob('examples/**/*')
   s.require_path = 'lib'
 
-  s.add_development_dependency('rake')
-  s.add_development_dependency('rspec', '~> 2.0')
+  s.add_development_dependency('appraisal')
+  s.add_development_dependency('autotest')
+  s.add_development_dependency('rake', '>= 12.3.3')
+  s.add_development_dependency('rspec', '~> 3.2')
+
+  s.add_runtime_dependency('holidays', '>= 3.1')
 end

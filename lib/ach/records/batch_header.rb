@@ -1,5 +1,7 @@
 module ACH::Records
   class BatchHeader < Record
+    attr_accessor :full_company_identification
+
     @fields = []
 
     const_field :record_type, '5'
@@ -20,8 +22,9 @@ module ACH::Records
         lambda { |f| f.upcase }, 'PPD', /\A\w{3}\z/
     field :company_entry_description, String,
         lambda { |f| left_justify(f, 10)}
+    # This field allows for marking the batch as same-day for the bank by passing in ex: SD1300
     field :company_descriptive_date, Time,
-        lambda { |f| f.strftime('%y%m%d')},
+        ACH::StringFormattingHelper.method(:stringify_with_same_day).to_proc,
         lambda { Time.now }
     field :effective_entry_date, Time,
         lambda { |f| f.strftime('%y%m%d')}
@@ -31,6 +34,6 @@ module ACH::Records
     field :originating_dfi_identification, String,
         nil, nil, /\A\d{8}\z/
 
-    field :batch_number, Integer, lambda { |f| sprintf('%07d', f)}, 1
+    field :batch_number, Integer, lambda { |f| sprintf('%07d', f)}, nil
   end
 end
