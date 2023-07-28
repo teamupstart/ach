@@ -26,8 +26,7 @@ describe ACH::ACHFile do
     bh.company_entry_description = 'DESCRIPTION'
     bh.company_descriptive_date = Date.new(2020, 11, 3)
 
-    bh.effective_entry_date =
-      ACH::NextFederalReserveEffectiveDate.new(Date.new(2020, 11, 3)).result
+    bh.effective_entry_date = Date.new(2020, 11, 4)
     bh.originating_dfi_identification = '77777777'
 
     entry_details.times { add_detail(batch) }
